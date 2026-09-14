@@ -336,6 +336,9 @@ void Application::initLockScreenAndSession() {
     }
     m_lockScreen.onConfigChanged();
     m_lockscreenWidgetsController.onLockStateChanged();
+    if (m_syncScriptApiOutputs) {
+      m_syncScriptApiOutputs();
+    }
     checkLockscreenWallpaperHook();
   });
   m_lockScreen.setSessionHooks(
