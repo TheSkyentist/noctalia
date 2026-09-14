@@ -976,6 +976,7 @@ void Application::initAuxServicesAndHooks() {
         fireWallpaperChangedHook(change.path, change.connector);
       }
     }
+    checkLockscreenWallpaperHook();
     if (compositors::isKde()) {
       const auto applyKdeWallpaper = [](const std::string& path, const std::string& connector) {
         if (path.empty()) {
@@ -1051,6 +1052,15 @@ void Application::initAuxServicesAndHooks() {
     m_scriptApi.setSystemMonitor(nullptr);
     m_systemMonitor.reset();
   }
+}
+
+void Application::checkLockscreenWallpaperHook() {
+  const std::string path = m_configService.getLockscreenWallpaperPath(std::string());
+  if (path == m_lastLockscreenWallpaperPath) {
+    return;
+  }
+  m_lastLockscreenWallpaperPath = path;
+  m_hookManager.fire(HookKind::LockscreenWallpaperChanged, {{"NOCTALIA_LOCKSCREEN_WALLPAPER_PATH", path}});
 }
 
 void Application::releaseSleepDelayInhibitIfPending() {
