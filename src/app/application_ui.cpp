@@ -624,7 +624,9 @@ void Application::initPanelManagerAndPanels() {
     launcherPanel->addProvider(std::make_unique<AppProvider>(&m_configService, &m_compositorPlatform));
     launcherPanel->addProvider(std::make_unique<WallpaperProvider>(&m_configService, &m_wayland, &m_themeService));
     launcherPanel->addProvider(std::make_unique<WindowProvider>(&m_compositorPlatform));
-    launcherPanel->addProvider(std::make_unique<PanelProvider>(&m_panelManager, controlCenterPanelPtr));
+    launcherPanel->addProvider(
+        std::make_unique<PanelProvider>(&m_panelManager, controlCenterPanelPtr, &m_configService)
+    );
     launcherPanel->addProvider(std::make_unique<SessionProvider>(&m_configService, &m_sessionActionRunner));
     launcherPanel->addProvider(std::make_unique<MathProvider>(&m_clipboardService, &m_configService, &m_httpClient));
     launcherPanel->addProvider(std::make_unique<EmojiProvider>(&m_clipboardService));

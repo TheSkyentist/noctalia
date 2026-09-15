@@ -1,15 +1,15 @@
 #include "launcher/panel_provider.h"
 
+#include "config/config_service.h"
 #include "core/deferred_call.h"
 #include "i18n/i18n.h"
-#include "scripting/plugin_registry.h"
+#include "launcher/panel_catalog.h"
 #include "shell/control_center/control_center_panel.h"
 #include "shell/panel/panel_manager.h"
 #include "util/fuzzy_match.h"
 #include "util/string_utils.h"
 
 #include <algorithm>
-#include <array>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -18,74 +18,15 @@
 namespace {
 
   constexpr std::size_t kMaxResults = 50;
-  constexpr std::string_view kFallbackGlyph = "apps";
   // Synthetic id prefix for a Control Center tab row ("cc-tab:media"). Never
   // collides with a real panel id: built-ins have no colon and plugin ids are
   // "author/plugin:entry" (a slash always precedes the colon).
   constexpr std::string_view kControlCenterTabPrefix = "cc-tab:";
 
-  struct BuiltinPanelMeta {
-    std::string_view id;
-    std::string_view titleKey;
-    std::string_view glyph;
-  };
-
-  // Every panel PanelManager registers for core (see application_ui.cpp). Core
-  // panels ship no manifest to read a name/glyph from, so this is the only source
-  // of truth for them; keep it in sync if a core panel id is added or renamed.
-  constexpr std::array kBuiltinPanels = {
-      BuiltinPanelMeta{"clipboard", "launcher.providers.panel.builtin.clipboard", "clipboard"},
-      BuiltinPanelMeta{"control-center", "launcher.providers.panel.builtin.control-center", "adjustments"},
-      BuiltinPanelMeta{"launcher", "launcher.providers.panel.builtin.launcher", "search"},
-      BuiltinPanelMeta{"polkit", "launcher.providers.panel.builtin.polkit", "shield-lock"},
-      BuiltinPanelMeta{"session", "launcher.providers.panel.builtin.session", "power"},
-      BuiltinPanelMeta{"setup-wizard", "launcher.providers.panel.builtin.setup-wizard", "wand"},
-      BuiltinPanelMeta{"test", "launcher.providers.panel.builtin.test", "bug"},
-      BuiltinPanelMeta{"tray-drawer", "launcher.providers.panel.builtin.tray-drawer", "apps"},
-      BuiltinPanelMeta{"wallpaper", "launcher.providers.panel.builtin.wallpaper", "wallpaper-selector"},
-  };
-
-  struct PanelDescription {
-    std::string title;
-    std::string subtitle;
-    std::string glyph;
-  };
-
-  // Resolves a raw panel id ("clipboard", "author/plugin:entry") to a display
-  // title/subtitle/glyph: the builtin table above, the owning plugin's manifest
-  // name/icon (entry id as subtitle), or the raw id untouched as a last resort.
-  [[nodiscard]] PanelDescription describePanel(std::string_view panelId) {
-    const auto builtin = std::ranges::find(kBuiltinPanels, panelId, &BuiltinPanelMeta::id);
-    if (builtin != kBuiltinPanels.end()) {
-      return PanelDescription{
-          .title = i18n::tr(builtin->titleKey), .subtitle = {}, .glyph = std::string(builtin->glyph)
-      };
-    }
-
-    const auto colon = panelId.find(':');
-    if (colon == std::string_view::npos) {
-      return PanelDescription{.title = std::string(panelId), .subtitle = {}, .glyph = std::string(kFallbackGlyph)};
-    }
-
-    const std::string_view pluginId = panelId.substr(0, colon);
-    const std::string_view entryId = panelId.substr(colon + 1);
-    const auto* manifest = scripting::PluginRegistry::instance().findManifest(pluginId);
-    if (manifest == nullptr) {
-      return PanelDescription{
-          .title = std::string(pluginId), .subtitle = std::string(entryId), .glyph = std::string(kFallbackGlyph)
-      };
-    }
-    return PanelDescription{
-        .title = manifest->name,
-        .subtitle = std::string(entryId),
-        .glyph = manifest->icon.empty() ? std::string(kFallbackGlyph) : manifest->icon
-    };
-  }
-
 } // namespace
 
-PanelProvider::PanelProvider(PanelManager* panelManager, ControlCenterPanel* controlCenterPanel)
-    : m_panelManager(panelManager), m_controlCenterPanel(controlCenterPanel) {}
+PanelProvider::PanelProvider(PanelManager* panelManager, ControlCenterPanel* controlCenterPanel, ConfigService* config)
+    : m_panelManager(panelManager), m_controlCenterPanel(controlCenterPanel), m_config(config) {}
 
 std::string PanelProvider::displayName() const { return i18n::tr("launcher.providers.panel.title"); }
 
@@ -94,19 +35,26 @@ std::vector<LauncherResult> PanelProvider::query(std::string_view text) const {
     return {};
   }
 
-  std::vector<std::pair<std::string, PanelDescription>> entries;
+  static const std::vector<std::string> kNoIgnored;
+  const std::vector<std::string>& ignored =
+      m_config != nullptr ? m_config->config().shell.launcher.panels.ignored : kNoIgnored;
+
+  std::vector<std::pair<std::string, panel_catalog::Description>> entries;
   const std::vector<std::string> ids = m_panelManager->availablePanelIds();
   entries.reserve(ids.size());
   for (const auto& panelId : ids) {
-    entries.emplace_back(panelId, describePanel(panelId));
+    if (std::ranges::contains(ignored, panelId)) {
+      continue;
+    }
+    entries.emplace_back(panelId, panel_catalog::describe(panelId));
   }
 
-  if (m_controlCenterPanel != nullptr) {
+  if (m_controlCenterPanel != nullptr && !std::ranges::contains(ignored, "control-center")) {
     const std::string controlCenterTitle = i18n::tr("launcher.providers.panel.builtin.control-center");
     for (const auto& tab : m_controlCenterPanel->visibleTabsForLauncher()) {
       entries.emplace_back(
           std::string(kControlCenterTabPrefix) + std::string(tab.key),
-          PanelDescription{
+          panel_catalog::Description{
               .title = i18n::tr(tab.titleKey), .subtitle = controlCenterTitle, .glyph = std::string(tab.glyph)
           }
       );
@@ -119,7 +67,7 @@ std::vector<LauncherResult> PanelProvider::query(std::string_view text) const {
 
   struct ScoredPanel {
     std::string id;
-    PanelDescription description;
+    panel_catalog::Description description;
     double score = 0.0;
   };
 

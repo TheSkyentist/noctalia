@@ -2511,6 +2511,10 @@
           "description": "Also show open windows in unprefixed search",
           "label": "Windows in Global Search"
         },
+        "launcher-ignored-panels": {
+          "description": "Panels the panel provider never lists (e.g. authentication prompts, the setup wizard)",
+          "label": "Panels Ignored"
+        },
         "launcher-pinned-apps": {
           "description": "Desktop entry IDs of apps pinned to the launcher; they appear first when the launcher opens",
           "label": "Pinned Apps"
