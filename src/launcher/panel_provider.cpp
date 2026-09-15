@@ -1,5 +1,6 @@
 #include "launcher/panel_provider.h"
 
+#include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "scripting/plugin_registry.h"
 #include "shell/panel/panel_manager.h"
@@ -142,6 +143,10 @@ bool PanelProvider::activate(const LauncherResult& result) {
   if (!result.providerId.empty() && result.providerId != id()) {
     return false;
   }
-  m_panelManager->togglePanel(result.id);
+  // Defer to the next main-loop iteration so LauncherPanel's own close (right
+  // after activate() returns) doesn't immediately undo this panel's open.
+  PanelManager* panelManager = m_panelManager;
+  std::string panelId = result.id;
+  DeferredCall::callLater([panelManager, panelId = std::move(panelId)]() { panelManager->togglePanel(panelId); });
   return true;
 }
