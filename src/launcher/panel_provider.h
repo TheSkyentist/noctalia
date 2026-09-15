@@ -15,7 +15,7 @@ public:
   [[nodiscard]] std::string_view defaultPrefix() const override { return "pan"; }
   [[nodiscard]] std::string_view id() const override { return "Panels"; }
   [[nodiscard]] std::string displayName() const override;
-  [[nodiscard]] std::string_view defaultGlyphName() const override { return "layout-bottombar"; }
+  [[nodiscard]] std::string_view defaultGlyphName() const override { return "rectangle"; }
   [[nodiscard]] bool trackUsage() const override { return true; }
 
   [[nodiscard]] std::vector<LauncherResult> query(std::string_view text) const override;
