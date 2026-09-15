@@ -6,12 +6,10 @@ class PanelManager;
 class ControlCenterPanel;
 class ConfigService;
 
-// Lists every panel PanelManager knows about (built-in or plugin-registered) and
-// toggles the selected one. Built-in panels get a small hardcoded name/glyph
-// table since they ship in core and have no manifest; plugin panels ("author/
-// plugin:entry") are described from the owning plugin's manifest name/icon.
-// Also lists Control Center's currently-visible tabs (Audio, Network, ...) as
-// their own rows.
+// Lists every panel PanelManager knows about (built-in or plugin-registered),
+// plus Control Center's currently-visible tabs as their own rows, and toggles
+// whichever one is selected. Names/glyphs come from panel_catalog; ids in
+// shell.launcher.panels.ignored are left out.
 class PanelProvider : public LauncherProvider {
 public:
   PanelProvider(PanelManager* panelManager, ControlCenterPanel* controlCenterPanel, ConfigService* config);
