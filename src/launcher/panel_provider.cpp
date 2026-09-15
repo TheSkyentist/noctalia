@@ -3,6 +3,7 @@
 #include "core/deferred_call.h"
 #include "i18n/i18n.h"
 #include "scripting/plugin_registry.h"
+#include "shell/control_center/control_center_panel.h"
 #include "shell/panel/panel_manager.h"
 #include "util/fuzzy_match.h"
 #include "util/string_utils.h"
@@ -11,12 +12,17 @@
 #include <array>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
 
   constexpr std::size_t kMaxResults = 50;
   constexpr std::string_view kFallbackGlyph = "apps";
+  // Synthetic id prefix for a Control Center tab row ("cc-tab:media"). Never
+  // collides with a real panel id: built-ins have no colon and plugin ids are
+  // "author/plugin:entry" (a slash always precedes the colon).
+  constexpr std::string_view kControlCenterTabPrefix = "cc-tab:";
 
   struct BuiltinPanelMeta {
     std::string_view id;
@@ -78,7 +84,8 @@ namespace {
 
 } // namespace
 
-PanelProvider::PanelProvider(PanelManager* panelManager) : m_panelManager(panelManager) {}
+PanelProvider::PanelProvider(PanelManager* panelManager, ControlCenterPanel* controlCenterPanel)
+    : m_panelManager(panelManager), m_controlCenterPanel(controlCenterPanel) {}
 
 std::string PanelProvider::displayName() const { return i18n::tr("launcher.providers.panel.title"); }
 
@@ -86,8 +93,27 @@ std::vector<LauncherResult> PanelProvider::query(std::string_view text) const {
   if (m_panelManager == nullptr) {
     return {};
   }
+
+  std::vector<std::pair<std::string, PanelDescription>> entries;
   const std::vector<std::string> ids = m_panelManager->availablePanelIds();
-  if (ids.empty()) {
+  entries.reserve(ids.size());
+  for (const auto& panelId : ids) {
+    entries.emplace_back(panelId, describePanel(panelId));
+  }
+
+  if (m_controlCenterPanel != nullptr) {
+    const std::string controlCenterTitle = i18n::tr("launcher.providers.panel.builtin.control-center");
+    for (const auto& tab : m_controlCenterPanel->visibleTabsForLauncher()) {
+      entries.emplace_back(
+          std::string(kControlCenterTabPrefix) + std::string(tab.key),
+          PanelDescription{
+              .title = i18n::tr(tab.titleKey), .subtitle = controlCenterTitle, .glyph = std::string(tab.glyph)
+          }
+      );
+    }
+  }
+
+  if (entries.empty()) {
     return {};
   }
 
@@ -99,9 +125,8 @@ std::vector<LauncherResult> PanelProvider::query(std::string_view text) const {
 
   const std::string query = StringUtils::toLower(StringUtils::trim(text));
   std::vector<ScoredPanel> scored;
-  scored.reserve(ids.size());
-  for (const auto& panelId : ids) {
-    PanelDescription description = describePanel(panelId);
+  scored.reserve(entries.size());
+  for (auto& [panelId, description] : entries) {
     double score = 0.0;
     if (!query.empty()) {
       const std::string searchable = StringUtils::toLower(description.title + " " + panelId);
@@ -110,7 +135,7 @@ std::vector<LauncherResult> PanelProvider::query(std::string_view text) const {
         continue;
       }
     }
-    scored.push_back(ScoredPanel{.id = panelId, .description = std::move(description), .score = score});
+    scored.push_back(ScoredPanel{.id = std::move(panelId), .description = std::move(description), .score = score});
   }
 
   if (query.empty()) {
@@ -143,10 +168,23 @@ bool PanelProvider::activate(const LauncherResult& result) {
   if (!result.providerId.empty() && result.providerId != id()) {
     return false;
   }
-  // Defer to the next main-loop iteration so LauncherPanel's own close (right
-  // after activate() returns) doesn't immediately undo this panel's open.
+
   PanelManager* panelManager = m_panelManager;
   std::string panelId = result.id;
-  DeferredCall::callLater([panelManager, panelId = std::move(panelId)]() { panelManager->togglePanel(panelId); });
+  std::string context;
+  if (panelId.starts_with(kControlCenterTabPrefix)) {
+    context = panelId.substr(kControlCenterTabPrefix.size());
+    panelId = "control-center";
+  }
+
+  // Defer to the next main-loop iteration so LauncherPanel's own close (right
+  // after activate() returns) doesn't immediately undo this panel's open.
+  DeferredCall::callLater([panelManager, panelId = std::move(panelId), context = std::move(context)]() {
+    if (context.empty()) {
+      panelManager->togglePanel(panelId);
+    } else {
+      panelManager->togglePanel(panelId, PanelOpenRequest{.context = context});
+    }
+  });
   return true;
 }
