@@ -6,7 +6,7 @@
 #include "render/scene/node.h"
 #include "shell/desktop/desktop_widget_factory.h"
 #include "shell/desktop/desktop_widgets_controller.h"
-#include "shell/desktop/wallpaper_mask.h"
+#include "shell/wallpaper/wallpaper_mask.h"
 #include "wayland/layer_surface.h"
 
 #include <memory>
