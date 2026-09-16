@@ -3,6 +3,7 @@
 #include "config/config_types.h"
 #include "shell/desktop/desktop_widget_layout.h"
 #include "shell/desktop/desktop_widget_services.h"
+#include "shell/wallpaper/wallpaper_mask_registry.h"
 #include "ui/dialogs/layer_popup_host.h"
 
 #include <functional>
@@ -47,6 +48,8 @@ public:
   void onSecondTick();
   void requestLayout();
   void requestRedraw();
+  void setWallpaperMask(std::uint64_t ownerId, const std::string& outputName, std::optional<OutputWallpaperMask> mask);
+  void clearWallpaperMasks(std::uint64_t ownerId);
 
   void enterEdit();
   void exitEdit();
@@ -77,6 +80,7 @@ private:
 
   LockscreenWidgetsSnapshot m_snapshot;
   desktop_widgets::PlacementMapper m_placementMapper;
+  WallpaperMaskRegistry m_wallpaperMasks;
   bool m_initialized = false;
   std::function<void()> m_onEnterEdit;
   std::function<void()> m_onExitEdit;

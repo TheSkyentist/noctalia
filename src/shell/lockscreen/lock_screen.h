@@ -3,6 +3,7 @@
 #include "auth/pam_authenticator.h"
 #include "capture/screencopy_capture.h"
 #include "core/timer_manager.h"
+#include "shell/wallpaper/wallpaper_mask.h"
 
 #include <cstdint>
 #include <functional>
@@ -67,6 +68,7 @@ public:
   void onKeyboardLayoutChanged();
   void requestLayout();
   void requestUpdate();
+  void applyWidgetLayerMasks(const OutputWallpaperMaskMap& masks);
   /// After suspend/resume, discard pending callbacks on active lock surfaces
   /// while preserving queued work, then request an immediate redraw.
   void forceRepaintAfterResume();

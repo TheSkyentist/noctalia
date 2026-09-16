@@ -107,6 +107,19 @@ void LockscreenWidgetsController::initialize(const LockscreenWidgetsControllerSe
   m_editor = std::make_unique<DesktopWidgetsEditor>(DesktopWidgetsEditorProfile::lockscreen());
   m_editor->initialize(services.widgets);
   m_editor->setExitRequestedCallback([this]() { exitEdit(); });
+  m_wallpaperMasks.configure(
+      [this](const std::string& outputName) {
+        return m_wayland != nullptr && desktop_widgets::findOutputByKey(*m_wayland, outputName) != nullptr;
+      },
+      [this](const std::string& outputName) {
+        return m_config != nullptr ? m_config->getLockscreenWallpaperPath(outputName) : std::string{};
+      },
+      [this](const OutputWallpaperMaskMap& masks) {
+        if (m_lockScreen != nullptr) {
+          m_lockScreen->applyWidgetLayerMasks(masks);
+        }
+      }
+  );
   loadSnapshotFromConfig();
   m_initialized = true;
   applyVisibility();
@@ -141,6 +154,14 @@ void LockscreenWidgetsController::registerIpc(IpcService& ipc) {
 
 void LockscreenWidgetsController::onLockStateChanged() { applyVisibility(); }
 
+void LockscreenWidgetsController::setWallpaperMask(
+    std::uint64_t ownerId, const std::string& outputName, std::optional<OutputWallpaperMask> mask
+) {
+  m_wallpaperMasks.set(ownerId, outputName, std::move(mask));
+}
+
+void LockscreenWidgetsController::clearWallpaperMasks(std::uint64_t ownerId) { m_wallpaperMasks.clearOwner(ownerId); }
+
 void LockscreenWidgetsController::onOutputChange() {
   if (!m_initialized || m_lockScreen == nullptr) {
     return;
@@ -151,6 +172,7 @@ void LockscreenWidgetsController::onOutputChange() {
   if (placementChanged) {
     saveSnapshotToConfig();
   }
+  m_wallpaperMasks.prune();
   if (isEditing()) {
     m_editor->onOutputChange();
   } else if (m_host != nullptr) {
@@ -365,6 +387,7 @@ void LockscreenWidgetsController::handleConfigReload() {
     return;
   }
 
+  m_wallpaperMasks.prune();
   if (!isEditing()) {
     loadSnapshotFromConfig();
     if (m_host != nullptr && m_lockScreen != nullptr) {

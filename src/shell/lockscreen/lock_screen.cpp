@@ -292,6 +292,16 @@ void LockScreen::requestUpdate() {
   }
 }
 
+void LockScreen::applyWidgetLayerMasks(const OutputWallpaperMaskMap& masks) {
+  for (auto& instance : m_instances) {
+    if (instance.surface == nullptr) {
+      continue;
+    }
+    const auto maskIt = masks.find(instance.surface->outputKey());
+    instance.surface->setWidgetLayerMask(maskIt != masks.end() ? std::optional(maskIt->second) : std::nullopt);
+  }
+}
+
 void LockScreen::forceRepaintAfterResume() {
   for (auto& inst : m_instances) {
     if (inst.surface != nullptr) {

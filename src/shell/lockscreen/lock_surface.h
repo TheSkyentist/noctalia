@@ -10,6 +10,7 @@
 #include "render/scene/input_dispatcher.h"
 #include "render/scene/node.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
+#include "shell/wallpaper/wallpaper_mask.h"
 #include "wayland/surface.h"
 
 #include <array>
@@ -82,6 +83,10 @@ public:
   [[nodiscard]] bool hasDesktopCapture() const noexcept;
   [[nodiscard]] Node* widgetLayer() noexcept { return m_widgetLayer; }
   void setOutputKey(std::string outputKey) { m_outputKey = std::move(outputKey); }
+  [[nodiscard]] const std::string& outputKey() const noexcept { return m_outputKey; }
+  // Stores the requested mask (path only -- loading it into a texture and applying it during compositing
+  // happens elsewhere); unconsumed for now.
+  void setWidgetLayerMask(std::optional<OutputWallpaperMask> mask) { m_widgetLayerMask = std::move(mask); }
   void setWidgetsHost(LockscreenWidgetsHost* host) noexcept { m_widgetsHost = host; }
 
   [[nodiscard]] bool firstFrameRendered() const noexcept { return m_firstFrameRendered; }
@@ -167,6 +172,7 @@ private:
   // Offscreen target the widget layer will render into before masking/compositing it back onto the
   // wallpaper. Unlike the blur caches above, its content isn't meant to be reused across frames.
   CachedLayer m_widgetLayerCache;
+  std::optional<OutputWallpaperMask> m_widgetLayerMask;
   std::optional<ScreencopyImage> m_desktopCapture;
   float m_blurIntensity = 0.5F;
   float m_tintIntensity = 0.3F;
