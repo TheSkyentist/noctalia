@@ -4,6 +4,7 @@
 #include "config/config_service.h"
 #include "render/animation/animation_manager.h"
 #include "render/core/blur_cache.h"
+#include "render/core/cached_layer.h"
 #include "render/core/color.h"
 #include "render/core/texture_manager.h"
 #include "render/scene/input_dispatcher.h"
@@ -162,6 +163,9 @@ private:
   TextureHandle m_blurredDesktopTexture{};
   BlurCache m_blurCache;
   BlurCache m_wallpaperBlurCache;
+  // Offscreen target the widget layer will render into before masking/compositing it back onto the
+  // wallpaper. Unlike the blur caches above, its content isn't meant to be reused across frames.
+  CachedLayer m_widgetLayerCache;
   std::optional<ScreencopyImage> m_desktopCapture;
   float m_blurIntensity = 0.5F;
   float m_tintIntensity = 0.3F;

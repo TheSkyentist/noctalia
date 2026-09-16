@@ -1733,6 +1733,7 @@ void LockSurface::releaseCaptureTextures() {
     m_blurredDesktopTexture = {};
     m_blurCache.destroy();
     m_wallpaperBlurCache.destroy();
+    m_widgetLayerCache.destroy();
     return;
   }
 
@@ -1752,6 +1753,7 @@ void LockSurface::releaseCaptureTextures() {
   }
   m_blurCache.destroy();
   m_wallpaperBlurCache.destroy();
+  m_widgetLayerCache.destroy();
 }
 
 void LockSurface::applyBlurredDesktopTexture() {
@@ -1831,6 +1833,7 @@ void LockSurface::onGpuResourcesInvalidated() {
 void LockSurface::prepareForGraphicsReset() noexcept {
   m_blurCache.abandon();
   m_wallpaperBlurCache.abandon();
+  m_widgetLayerCache.abandon();
   m_wallpaperTexture = {};
   m_blurredWallpaperTexture = {};
   m_captureSourceTexture = {};
