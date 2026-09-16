@@ -374,7 +374,7 @@ void RenderContext::renderNode(
     float bh, float clipLeft, float clipTop, float clipRight, float clipBottom, bool hasClip, bool ignoreNodeOpacity,
     bool parentPaintContained
 ) {
-  if (!node->visible()) {
+  if (!node->visible() || !node->paintVisible()) {
     return;
   }
 

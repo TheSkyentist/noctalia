@@ -96,6 +96,9 @@ public:
   [[nodiscard]] float opacity() const noexcept { return m_opacity; }
   [[nodiscard]] float flexGrow() const noexcept { return m_flexGrow; }
   [[nodiscard]] bool visible() const noexcept { return m_visible; }
+  // Unlike visible(), affects only the ambient renderScene sweep -- layout and hit-testing are unaffected.
+  // For a subtree painted by a separate, explicit pass instead (e.g. composited back in after masking).
+  [[nodiscard]] bool paintVisible() const noexcept { return m_paintVisible; }
   [[nodiscard]] bool participatesInLayout() const noexcept { return m_participatesInLayout; }
   [[nodiscard]] bool paintDirty() const noexcept { return m_paintDirty; }
   [[nodiscard]] bool layoutDirty() const noexcept { return m_layoutDirty; }
@@ -125,6 +128,7 @@ public:
   void setOpacity(float opacity);
   void setFlexGrow(float grow);
   void setVisible(bool visible);
+  void setPaintVisible(bool paintVisible);
   void setParticipatesInLayout(bool participatesInLayout);
   void setClipChildren(bool clipChildren);
   // Promises that every node in this subtree paints within its own bounds (plus a small slack).
@@ -205,6 +209,7 @@ private:
   float m_opacity = 1.0F;
   float m_flexGrow = 0.0F;
   bool m_visible = true;
+  bool m_paintVisible = true;
   bool m_participatesInLayout = true;
   bool m_paintDirty = true;
   bool m_layoutDirty = true;

@@ -296,6 +296,8 @@ void Node::setPaintContained(bool paintContained) { m_paintContained = paintCont
 
 void Node::setHitTestVisible(bool hitTestVisible) { m_hitTestVisible = hitTestVisible; }
 
+void Node::setPaintVisible(bool paintVisible) { m_paintVisible = paintVisible; }
+
 void Node::setHitTestOutset(const HitTestOutset& outset) {
   const HitTestOutset clamped{
       .left = std::max(0.0F, outset.left),
