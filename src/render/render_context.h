@@ -13,6 +13,7 @@
 class GlSharedContext;
 class Node;
 class RenderBackend;
+class RenderFramebuffer;
 class RenderTarget;
 enum class RenderGraphicsResetStatus;
 struct Mat3;
@@ -33,6 +34,9 @@ public:
   void finishGraphicsResetRecovery() noexcept { m_graphicsResetPending = false; }
 
   void renderScene(RenderTarget& target, Node* sceneRoot, const WallpaperMaskDrawParams* wallpaperMask = nullptr);
+  // Draws `sceneRoot` into `destination` at `target`'s scale and size, matching what renderScene would
+  // draw at the same node. Leaves the default framebuffer bound.
+  void renderSceneToFramebuffer(RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot);
   void setGraphicsResetCallback(std::function<void(RenderGraphicsResetStatus)> callback) {
     m_graphicsResetCallback = std::move(callback);
   }

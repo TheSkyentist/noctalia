@@ -247,6 +247,41 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot, const Wal
   }
 }
 
+void RenderContext::renderSceneToFramebuffer(RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot) {
+  if (m_backend == nullptr || m_graphicsResetPending || sceneRoot == nullptr) {
+    return;
+  }
+  if (!m_backend->makeCurrentNoSurface()) {
+    return;
+  }
+
+  if (m_gpuResourceGeneration != 0 && sceneRoot->gpuResourceGeneration() != m_gpuResourceGeneration) {
+    sceneRoot->invalidateGpuResources(target.renderer(), m_gpuResourceGeneration);
+  }
+
+  const auto totalStart = std::chrono::steady_clock::now();
+  {
+    UiPhaseScope renderPhase(UiPhase::Render);
+    m_backend->bindFramebuffer(destination);
+    m_backend->setViewport(target.bufferWidth(), target.bufferHeight());
+    m_backend->setBlendMode(RenderBlendMode::PremultipliedAlpha);
+    m_backend->disableScissor();
+    m_backend->clear(rgba(0.0F, 0.0F, 0.0F, 0.0F));
+
+    const auto sw = static_cast<float>(target.logicalWidth());
+    const auto sh = static_cast<float>(target.logicalHeight());
+    const auto bw = static_cast<float>(target.bufferWidth());
+    const auto bh = static_cast<float>(target.bufferHeight());
+    renderNode(
+        target.contentScale(), sceneRoot, Mat3::identity(), 1.0F, sw, sh, bw, bh, 0.0F, 0.0F, sw, sh, false, false,
+        false
+    );
+  }
+  m_backend->bindDefaultFramebuffer();
+  const float ms = elapsedSince(totalStart);
+  logSlowRenderOperation(ms, "renderSceneToFramebuffer took {:.1F}ms total", ms);
+}
+
 TextMetrics RenderContext::measureTextScaled(
     float scale, std::string_view text, float fontSize, FontWeight fontWeight, float maxWidth, int maxLines,
     TextAlign align, std::string_view fontFamily, TextEllipsize ellipsize, bool useMarkup
