@@ -175,6 +175,7 @@ namespace scripting {
     SetWallpaperMask,
     SetLockscreenWallpaper,
     ClearLockscreenWallpaper,
+    SetLockscreenWallpaperMask,
     TogglePanel,
     OpenPluginSettings,
     LoadSound,
@@ -195,6 +196,7 @@ namespace scripting {
     // SetWallpaper: title holds the output connector (empty = all outputs), body the image path.
     // SetWallpaperMask: title holds output, body mask path, extra wallpaper path, and hostId the owner.
     // SetLockscreenWallpaper: body holds the image path. ClearLockscreenWallpaper: no fields used.
+    // SetLockscreenWallpaperMask: same fields as SetWallpaperMask.
     // TogglePanel: title holds the panel id ("author/plugin:panel").
     // OpenPluginSettings: title holds the plugin id ("author/plugin").
     bool flag = false;

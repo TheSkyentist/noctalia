@@ -721,6 +721,23 @@ void Application::initStyleThemeAndWayland() {
   });
   m_scriptApi.setClearLockscreenWallpaperHook([this]() { m_configService.clearLockscreenWallpaperPath(); });
 
+  // Let a plugin apply a source-aligned occlusion mask to the lock screen widget layer.
+  m_scriptApi.setLockscreenWallpaperMaskHook([this](
+                                                 std::uint64_t ownerId, const std::string& outputName,
+                                                 const std::string& path, const std::string& wallpaperPath
+                                             ) {
+    if (path.empty()) {
+      m_lockscreenWidgetsController.setWallpaperMask(ownerId, outputName, std::nullopt);
+      return;
+    }
+    m_lockscreenWidgetsController.setWallpaperMask(
+        ownerId, outputName, OutputWallpaperMask{.ownerId = ownerId, .path = path, .wallpaperPath = wallpaperPath}
+    );
+  });
+  m_scriptApi.setClearLockscreenWallpaperMasksHook([this](std::uint64_t ownerId) {
+    m_lockscreenWidgetsController.clearWallpaperMasks(ownerId);
+  });
+
   // Let a plugin toggle one of its own panels.
   m_scriptApi.setTogglePanelHook([this](const std::string& panelId) { m_panelManager.togglePanel(panelId); });
 

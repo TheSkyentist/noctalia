@@ -46,6 +46,8 @@ effective configuration. For example, `noctalia.getSetting("shell.offline_mode")
 | `noctalia.lockscreenWallpaperPath(connector)` | string or `nil` | Returns the effective lock screen wallpaper for an output: the `[lockscreen].wallpaper` override if set, else that output's desktop wallpaper. `nil` for an unknown output. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
 | `noctalia.setLockscreenWallpaper(path)` | nothing | Sets and persists the `[lockscreen].wallpaper` override, applying to every monitor. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
 | `noctalia.clearLockscreenWallpaper()` | nothing | Clears the override so the lock screen goes back to inheriting the desktop wallpaper. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
+| `noctalia.setLockscreenWallpaperMask(connector, { path, wallpaperPath })` | nothing | Applies a source-aligned grayscale occlusion mask to the lock screen widget layer on the output. Requires <PluginApiBadge feature="lockscreen-wallpaper-mask" />. |
+| `noctalia.setLockscreenWallpaperMask(connector, nil)` | nothing | Clears this plugin runtime's lock screen mask from the output. Requires <PluginApiBadge feature="lockscreen-wallpaper-mask" />. |
 | `noctalia.togglePanel("author/plugin:panel")` | nothing | Opens or closes a plugin panel by full entry id. |
 | `noctalia.openSettings()` | nothing | Opens the settings window at this plugin's own settings, closing any open panel. Requires <PluginApiBadge feature="open-settings" />. |
 
@@ -63,7 +65,10 @@ stale, malformed, unreadable, and dimension-mismatched masks are rejected. One p
 time. The owner may replace or clear it, and Noctalia clears all of that runtime's masks when it unloads.
 
 `setLockscreenWallpaper(path)` accepts the same values as `setWallpaper`: an image path or a `color:#RRGGBB` /
-`color:#RRGGBBAA` literal. There is no lock screen equivalent of `setWallpaperMask` yet.
+`color:#RRGGBBAA` literal. `setLockscreenWallpaperMask` behaves like `setWallpaperMask`, applied to the lock screen's
+widget layer instead of a desktop-widget surface: `wallpaperPath` must exactly match
+`noctalia.lockscreenWallpaperPath(connector)`, one plugin runtime owns an output's lock screen mask at a time, and
+Noctalia clears all of that runtime's lock screen masks when it unloads.
 
 `openSettings()` takes no id - the host uses the calling plugin's own id, so a plugin can only ever open its own page.
 It is the way to offer a "configure me" affordance from a panel or widget, since plugins read config but cannot write

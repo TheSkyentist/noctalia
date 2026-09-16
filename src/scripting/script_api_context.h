@@ -38,6 +38,9 @@ namespace scripting {
     using SetWallpaperMaskHook =
         std::function<void(std::uint64_t, const std::string&, const std::string&, const std::string&)>;
     using ClearWallpaperMasksHook = std::function<void(std::uint64_t)>;
+    using SetLockscreenWallpaperMaskHook =
+        std::function<void(std::uint64_t, const std::string&, const std::string&, const std::string&)>;
+    using ClearLockscreenWallpaperMasksHook = std::function<void(std::uint64_t)>;
 
     [[nodiscard]] bool isDarkMode() const noexcept { return m_darkMode.load(std::memory_order_relaxed); }
     void setDarkMode(bool dark) noexcept { m_darkMode.store(dark, std::memory_order_relaxed); }
@@ -196,6 +199,26 @@ namespace scripting {
       }
     }
 
+    void setLockscreenWallpaperMaskHook(SetLockscreenWallpaperMaskHook hook) {
+      m_lockscreenWallpaperMaskHook = std::move(hook);
+    }
+
+    void invokeSetLockscreenWallpaperMask(
+        std::uint64_t ownerId, const std::string& outputName, const std::string& path, const std::string& wallpaperPath
+    ) const {
+      if (m_lockscreenWallpaperMaskHook) {
+        m_lockscreenWallpaperMaskHook(ownerId, outputName, path, wallpaperPath);
+      }
+    }
+
+    void setClearLockscreenWallpaperMasksHook(ClearLockscreenWallpaperMasksHook hook) {
+      m_clearLockscreenWallpaperMasksHook = std::move(hook);
+    }
+
+    [[nodiscard]] ClearLockscreenWallpaperMasksHook clearLockscreenWallpaperMasksHook() const {
+      return m_clearLockscreenWallpaperMasksHook;
+    }
+
     // The live system monitor, or nullptr when it is unavailable. Unlike the hooks around it this
     // is read straight from a script worker thread: SystemMonitorService::latest() is mutex-guarded
     // and returns a copy, so no main-thread marshalling is needed. The pointer itself is atomic
@@ -269,6 +292,8 @@ namespace scripting {
     ClearWallpaperMasksHook m_clearWallpaperMasksHook;
     std::function<void(const std::string&)> m_lockscreenWallpaperHook;
     std::function<void()> m_clearLockscreenWallpaperHook;
+    SetLockscreenWallpaperMaskHook m_lockscreenWallpaperMaskHook;
+    ClearLockscreenWallpaperMasksHook m_clearLockscreenWallpaperMasksHook;
     std::function<void(const std::string&)> m_togglePanelHook;
     std::function<void(const std::string&)> m_openPluginSettingsHook;
     LoadSoundHook m_loadSoundHook;

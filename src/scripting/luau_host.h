@@ -211,6 +211,7 @@ public:
   // Sets/clears the lock screen wallpaper override. Queued, applied on the main thread.
   void scriptSetLockscreenWallpaper(std::string path);
   void scriptClearLockscreenWallpaper();
+  void scriptSetLockscreenWallpaperMask(std::string outputName, std::string path, std::string wallpaperPath);
   // Toggle a host panel by id ("author/plugin:panel"). Queued, applied on the main thread.
   void scriptTogglePanel(std::string panelId);
   // Open the settings window at this plugin's own settings. Queued, applied on the main thread.

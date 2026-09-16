@@ -11,8 +11,6 @@
 #include "shell/lockscreen/lock_surface.h"
 #include "shell/lockscreen/lockscreen_login_box.h"
 #include "shell/lockscreen/lockscreen_widgets_host.h"
-#include "shell/wallpaper/wallpaper_paths.h"
-#include "util/string_utils.h"
 
 #include <algorithm>
 #include <charconv>
@@ -150,40 +148,6 @@ void LockscreenWidgetsController::registerIpc(IpcService& ipc) {
       return "error: lock screen disabled\n";
     }
     toggleEdit();
-    return "ok\n";
-  });
-
-  // TEMPORARY: manual test hooks for the widget-layer mask (step 8 of lockwp-widget-mask). Remove
-  // before PR -- superseded by the real plugin API in step 9.
-  static constexpr std::uint64_t kDebugMaskOwnerId = 1;
-  ipc.bind(noctalia::cli::msg::lockscreenWidgetMaskSetDebug, [this, &ipc](const std::string& args) -> std::string {
-    if (m_wayland == nullptr || m_config == nullptr) {
-      return "error: lock screen not initialized\n";
-    }
-    const std::string trimmed = StringUtils::trim(args);
-    if (trimmed.empty()) {
-      return "error: path required (lockscreen-widget-mask-set-debug <path>)\n";
-    }
-    const std::optional<std::string_view> callerCwd =
-        ipc.callerCwd().has_value() ? std::optional<std::string_view>{*ipc.callerCwd()} : std::nullopt;
-    const auto resolved = wallpaper::resolveWallpaperImagePath(trimmed, callerCwd);
-    if (!resolved.has_value()) {
-      return "error: path does not exist or is not a regular file\n";
-    }
-    for (const auto& output : m_wayland->outputs()) {
-      if (!output.done || output.output == nullptr || !output.hasUsableGeometry()) {
-        continue;
-      }
-      const std::string outputName = desktop_widgets::outputKey(output);
-      setWallpaperMask(
-          kDebugMaskOwnerId, outputName,
-          OutputWallpaperMask{.path = *resolved, .wallpaperPath = m_config->getLockscreenWallpaperPath(outputName)}
-      );
-    }
-    return "ok\n";
-  });
-  ipc.bind(noctalia::cli::msg::lockscreenWidgetMaskClearDebug, [this](const std::string&) -> std::string {
-    clearWallpaperMasks(kDebugMaskOwnerId);
     return "ok\n";
   });
 }
