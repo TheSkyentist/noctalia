@@ -17,6 +17,7 @@ class RenderFramebuffer;
 class RenderTarget;
 enum class RenderGraphicsResetStatus;
 struct Mat3;
+struct RenderImageDraw;
 struct WallpaperMaskDrawParams;
 
 class RenderContext {
@@ -33,7 +34,12 @@ public:
   void restoreAfterGraphicsReset(GlSharedContext& shared);
   void finishGraphicsResetRecovery() noexcept { m_graphicsResetPending = false; }
 
-  void renderScene(RenderTarget& target, Node* sceneRoot, const WallpaperMaskDrawParams* wallpaperMask = nullptr);
+  // `compositeLayer`, when set, is drawn on top with normal alpha blending after the mask pass -- for a
+  // layer (e.g. lock screen widgets) rendered separately via renderSceneToFramebuffer and composited back.
+  void renderScene(
+      RenderTarget& target, Node* sceneRoot, const WallpaperMaskDrawParams* wallpaperMask = nullptr,
+      const RenderImageDraw* compositeLayer = nullptr
+  );
   // Draws `sceneRoot` into `destination` at `target`'s scale and size, matching what renderScene would
   // draw at the same node. Leaves the default framebuffer bound.
   void renderSceneToFramebuffer(RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot);

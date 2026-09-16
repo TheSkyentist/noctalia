@@ -106,6 +106,7 @@ private:
   void prepareFrame(bool needsUpdate, bool needsLayout);
   void applyWallpaperTexture();
   void applyBlurredDesktopTexture();
+  void updateWidgetLayerComposite();
   void releaseWallpaperTextureRef(const std::string& path);
   void releaseCaptureTextures();
   void layoutScene(std::uint32_t width, std::uint32_t height);

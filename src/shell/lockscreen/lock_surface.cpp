@@ -179,6 +179,9 @@ LockSurface::LockSurface(WaylandConnection& connection, ConfigService* config) :
     auto widgetLayer = ui::node({});
     widgetLayer->setZIndex(2);
     m_widgetLayer = m_root.addChild(std::move(widgetLayer));
+    // Painted separately into m_widgetLayerCache and composited back in render() -- not by the ambient
+    // renderScene sweep -- so a wallpaper mask can be applied to it without affecting the wallpaper.
+    m_widgetLayer->setPaintVisible(false);
   }
 
   m_root.addChild(
@@ -1842,7 +1845,47 @@ void LockSurface::prepareForGraphicsReset() noexcept {
   m_wallpaperDirty = true;
 }
 
+void LockSurface::updateWidgetLayerComposite() {
+  if (m_widgetLayer == nullptr || renderContext() == nullptr || !renderTarget().isReady()) {
+    setCompositeLayer(std::nullopt);
+    return;
+  }
+
+  const auto bufferWidth = renderTarget().bufferWidth();
+  const auto bufferHeight = renderTarget().bufferHeight();
+  m_widgetLayerCache.resize(renderContext()->backend(), bufferWidth, bufferHeight);
+  // Not reused across frames like the blur caches -- the widget layer's content changes too often for
+  // that -- so force a redraw every time instead of relying on CachedLayer's dirty tracking.
+  m_widgetLayerCache.invalidate();
+  const TextureId texture = m_widgetLayerCache.ensure([this](RenderFramebuffer& target) {
+    renderContext()->renderSceneToFramebuffer(renderTarget(), target, m_widgetLayer);
+  });
+
+  if (!texture.valid()) {
+    setCompositeLayer(std::nullopt);
+    return;
+  }
+
+  const auto w = static_cast<float>(bufferWidth);
+  const auto h = static_cast<float>(bufferHeight);
+  setCompositeLayer(
+      RenderImageDraw{
+          .texture = texture,
+          .surfaceWidth = w,
+          .surfaceHeight = h,
+          .width = w,
+          .height = h,
+          .fitMode = RenderImageFitMode::Stretch,
+          .textureWidth = w,
+          .textureHeight = h,
+          // GL framebuffer textures are bottom-up; drawImage expects top-down like every other image source.
+          .transform = Mat3::translation(0.0F, h) * Mat3::scale(1.0F, -1.0F),
+      }
+  );
+}
+
 void LockSurface::render() {
+  updateWidgetLayerComposite();
   Surface::render();
   if (!m_firstFrameRendered) {
     m_firstFrameRendered = true;

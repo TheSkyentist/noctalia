@@ -1,5 +1,6 @@
 #pragma once
 
+#include "render/backend/render_backend.h"
 #include "render/core/render_styles.h"
 #include "render/core/wallpaper_types.h"
 #include "render/render_target.h"
@@ -129,6 +130,9 @@ public:
   void setSceneRoot(Node* root);
   void setRenderContext(RenderContext* ctx);
   void setWallpaperMask(std::optional<WallpaperMaskDrawParams> mask);
+  // Set immediately before a render() call that should composite it in, rather than async state that
+  // requests its own redraw the way setWallpaperMask does.
+  void setCompositeLayer(std::optional<RenderImageDraw> layer);
   [[nodiscard]] RenderContext* renderContext() const noexcept { return m_renderContext; }
   [[nodiscard]] RenderTarget& renderTarget() noexcept { return m_renderTarget; }
   [[nodiscard]] wl_surface* wlSurface() const noexcept { return m_surface; }
@@ -192,6 +196,7 @@ private:
   AnimationManager* m_animationManager = nullptr;
   Node* m_sceneRoot = nullptr;
   std::optional<WallpaperMaskDrawParams> m_wallpaperMask;
+  std::optional<RenderImageDraw> m_compositeLayer;
   std::string m_debugName;
   std::shared_ptr<InvalidationToken> m_invalidationToken = std::make_shared<InvalidationToken>();
   ConfigureCallback m_configureCallback;

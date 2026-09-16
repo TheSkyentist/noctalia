@@ -192,7 +192,10 @@ void RenderContext::notifyFontConfigChanged() {
   ++m_textMetricsGeneration;
 }
 
-void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot, const WallpaperMaskDrawParams* wallpaperMask) {
+void RenderContext::renderScene(
+    RenderTarget& target, Node* sceneRoot, const WallpaperMaskDrawParams* wallpaperMask,
+    const RenderImageDraw* compositeLayer
+) {
   if (m_backend == nullptr || m_graphicsResetPending) {
     return;
   }
@@ -230,6 +233,11 @@ void RenderContext::renderScene(RenderTarget& target, Node* sceneRoot, const Wal
       m_backend->disableScissor();
       m_backend->setBlendMode(RenderBlendMode::DestinationOut);
       m_backend->drawWallpaperMask(*wallpaperMask);
+    }
+    if (compositeLayer != nullptr && compositeLayer->texture != 0) {
+      m_backend->disableScissor();
+      m_backend->setBlendMode(RenderBlendMode::PremultipliedAlpha);
+      m_backend->drawImage(*compositeLayer);
     }
   }
   float ms = elapsedSince(drawStart);
@@ -374,7 +382,7 @@ void RenderContext::renderNode(
     float bh, float clipLeft, float clipTop, float clipRight, float clipBottom, bool hasClip, bool ignoreNodeOpacity,
     bool parentPaintContained
 ) {
-  if (!node->visible() || !node->paintVisible()) {
+  if (!node->visible()) {
     return;
   }
 
@@ -660,8 +668,14 @@ void RenderContext::renderNode(
     return;
   }
 
+  // paintVisible() is checked only here, for children reached through the ambient sweep -- not at the top
+  // of this function -- so a node with paintVisible() == false can still be rendered by calling renderNode
+  // (or renderScene/renderSceneToFramebuffer) with it as the explicit starting node.
   if (childrenSorted) {
     for (const auto& child : children) {
+      if (!child->paintVisible()) {
+        continue;
+      }
       renderNode(
           renderScale, child.get(), worldTransform, effectiveOpacity, sw, sh, bw, bh, childClipLeft, childClipTop,
           childClipRight, childClipBottom, childHasClip, false, paintContained
@@ -669,6 +683,9 @@ void RenderContext::renderNode(
     }
   } else {
     for (const auto* child : orderedChildren) {
+      if (!child->paintVisible()) {
+        continue;
+      }
       renderNode(
           renderScale, child, worldTransform, effectiveOpacity, sw, sh, bw, bh, childClipLeft, childClipTop,
           childClipRight, childClipBottom, childHasClip, false, paintContained
