@@ -41,8 +41,12 @@ public:
       const RenderImageDraw* compositeLayer = nullptr
   );
   // Draws `sceneRoot` into `destination` at `target`'s scale and size, matching what renderScene would
-  // draw at the same node. Leaves the default framebuffer bound.
-  void renderSceneToFramebuffer(RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot);
+  // draw at the same node, then applies `wallpaperMask` (if set) against that same destination. Leaves
+  // the default framebuffer bound.
+  void renderSceneToFramebuffer(
+      RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot,
+      const WallpaperMaskDrawParams* wallpaperMask = nullptr
+  );
   void setGraphicsResetCallback(std::function<void(RenderGraphicsResetStatus)> callback) {
     m_graphicsResetCallback = std::move(callback);
   }

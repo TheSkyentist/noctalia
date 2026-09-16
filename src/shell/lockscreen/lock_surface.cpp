@@ -554,6 +554,7 @@ LockSurface::~LockSurface() {
   if (m_wallpaperTexture.id != 0) {
     releaseWallpaperTextureRef(m_textureWallpaperPath);
   }
+  setWidgetLayerMask(std::nullopt);
   m_connection.unregisterSurface(m_surface);
   if (m_lockSurface != nullptr) {
     // If get_lock_surface raced with the output disappearing server-side, some
@@ -1841,8 +1842,37 @@ void LockSurface::prepareForGraphicsReset() noexcept {
   m_blurredWallpaperTexture = {};
   m_captureSourceTexture = {};
   m_blurredDesktopTexture = {};
+  m_widgetLayerMaskTexture = {};
   m_captureDirty = true;
   m_wallpaperDirty = true;
+}
+
+void LockSurface::setWidgetLayerMask(std::optional<OutputWallpaperMask> mask) {
+  if (m_widgetLayerMask == mask) {
+    return;
+  }
+
+  if (m_widgetLayerMaskTexture.valid() && m_textureCache != nullptr) {
+    m_textureCache->releaseAlphaMask(m_widgetLayerMaskTexture, m_widgetLayerMask->path);
+  }
+  m_widgetLayerMaskTexture = {};
+  m_widgetLayerMask = std::move(mask);
+
+  if (!m_widgetLayerMask.has_value() || m_textureCache == nullptr) {
+    return;
+  }
+
+  TextureHandle texture = m_textureCache->acquireAlphaMask(m_widgetLayerMask->path);
+  const TextureHandle wallpaperTexture = m_textureCache->peek(m_widgetLayerMask->wallpaperPath);
+  if (!texture.valid()
+      || !wallpaperTexture.valid()
+      || texture.width != wallpaperTexture.width
+      || texture.height != wallpaperTexture.height) {
+    m_textureCache->releaseAlphaMask(texture, m_widgetLayerMask->path);
+    return;
+  }
+
+  m_widgetLayerMaskTexture = texture;
 }
 
 void LockSurface::updateWidgetLayerComposite() {
@@ -1857,8 +1887,24 @@ void LockSurface::updateWidgetLayerComposite() {
   // Not reused across frames like the blur caches -- the widget layer's content changes too often for
   // that -- so force a redraw every time instead of relying on CachedLayer's dirty tracking.
   m_widgetLayerCache.invalidate();
-  const TextureId texture = m_widgetLayerCache.ensure([this](RenderFramebuffer& target) {
-    renderContext()->renderSceneToFramebuffer(renderTarget(), target, m_widgetLayer);
+
+  WallpaperMaskDrawParams mask{};
+  const WallpaperMaskDrawParams* maskParams = nullptr;
+  if (m_widgetLayerMaskTexture.valid()) {
+    mask = WallpaperMaskDrawParams{
+        .texture = m_widgetLayerMaskTexture.id,
+        .surfaceWidth = static_cast<float>(renderTarget().logicalWidth()),
+        .surfaceHeight = static_cast<float>(renderTarget().logicalHeight()),
+        .outputWidth = static_cast<float>(renderTarget().logicalWidth()),
+        .outputHeight = static_cast<float>(renderTarget().logicalHeight()),
+        .imageWidth = static_cast<float>(m_widgetLayerMaskTexture.width),
+        .imageHeight = static_cast<float>(m_widgetLayerMaskTexture.height),
+        .fillMode = static_cast<float>(m_wallpaperFillMode),
+    };
+    maskParams = &mask;
+  }
+  const TextureId texture = m_widgetLayerCache.ensure([this, maskParams](RenderFramebuffer& target) {
+    renderContext()->renderSceneToFramebuffer(renderTarget(), target, m_widgetLayer, maskParams);
   });
 
   if (!texture.valid()) {

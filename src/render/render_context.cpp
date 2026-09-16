@@ -255,7 +255,9 @@ void RenderContext::renderScene(
   }
 }
 
-void RenderContext::renderSceneToFramebuffer(RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot) {
+void RenderContext::renderSceneToFramebuffer(
+    RenderTarget& target, RenderFramebuffer& destination, Node* sceneRoot, const WallpaperMaskDrawParams* wallpaperMask
+) {
   if (m_backend == nullptr || m_graphicsResetPending || sceneRoot == nullptr) {
     return;
   }
@@ -284,6 +286,11 @@ void RenderContext::renderSceneToFramebuffer(RenderTarget& target, RenderFramebu
         target.contentScale(), sceneRoot, Mat3::identity(), 1.0F, sw, sh, bw, bh, 0.0F, 0.0F, sw, sh, false, false,
         false
     );
+    if (wallpaperMask != nullptr && wallpaperMask->texture != 0) {
+      m_backend->disableScissor();
+      m_backend->setBlendMode(RenderBlendMode::DestinationOut);
+      m_backend->drawWallpaperMask(*wallpaperMask);
+    }
   }
   m_backend->bindDefaultFramebuffer();
   const float ms = elapsedSince(totalStart);

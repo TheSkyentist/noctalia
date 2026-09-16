@@ -145,6 +145,11 @@ namespace noctalia::cli {
   inline constexpr std::array kMsgLockscreenWallpaperSetPositionals{
       Positional{"path", {}, {}, true, false, false},
   };
+  // TEMPORARY: manual test hook for the widget-layer mask, step 8 of the lockwp-widget-mask branch.
+  // Remove before PR -- superseded by the real plugin API in step 9.
+  inline constexpr std::array kMsgLockscreenWidgetMaskSetDebugPositionals{
+      Positional{"path", {}, {}, true, false, false},
+  };
   inline constexpr std::array kMsgLogLevelSetPositionals{
       Positional{"level", {}, kMsgLogLevelSetLevelChoices, true, false, false},
   };
@@ -506,6 +511,27 @@ namespace noctalia::cli {
         {},
         {},
         kMsgLockscreenWallpaperSetPositionals,
+        {},
+        false
+    };
+    // TEMPORARY: see kMsgLockscreenWidgetMaskSetDebugPositionals above -- remove before PR.
+    inline constexpr Command lockscreenWidgetMaskSetDebug{
+        "lockscreen-widget-mask-set-debug",
+        "[TEMP] Apply a mask image to the lock screen widget layer on all outputs",
+        {},
+        {},
+        {},
+        kMsgLockscreenWidgetMaskSetDebugPositionals,
+        {},
+        false
+    };
+    inline constexpr Command lockscreenWidgetMaskClearDebug{
+        "lockscreen-widget-mask-clear-debug",
+        "[TEMP] Clear the lock screen widget layer mask on all outputs",
+        {},
+        {},
+        {},
+        {},
         {},
         false
     };
@@ -913,6 +939,8 @@ namespace noctalia::cli {
       msg::lockscreenWallpaperClear,
       msg::lockscreenWallpaperGet,
       msg::lockscreenWallpaperSet,
+      msg::lockscreenWidgetMaskClearDebug,
+      msg::lockscreenWidgetMaskSetDebug,
       msg::lockscreenWidgetsEdit,
       msg::lockscreenWidgetsExit,
       msg::lockscreenWidgetsToggleEdit,
