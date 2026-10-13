@@ -97,7 +97,7 @@ The CLI forwards everything after the command as one string (`noctalia msg wallp
 | Get lock screen wallpaper | <IpcCommand command="lockscreen-wallpaper-get" /> | Print the effective lock screen wallpaper: the `[lockscreen].wallpaper` override if set, else the default desktop wallpaper. |
 | Get lock screen wallpaper (one monitor) | <IpcCommand command="lockscreen-wallpaper-get <connector>" /> | Print the effective lock screen wallpaper for the monitor named by **connector** (e.g. `DP-1`), falling back to that monitor's desktop wallpaper when no override is set. |
 | Set lock screen wallpaper | <IpcCommand command="lockscreen-wallpaper-set <path>" /> | Set the `[lockscreen].wallpaper` override, persisted to `settings.toml`. Applies to every monitor; there is no per-monitor lock screen wallpaper. |
-| Clear lock screen wallpaper | <IpcCommand command="lockscreen-wallpaper-clear" /> | Remove the override so the lock screen goes back to inheriting the desktop wallpaper. |
+| Clear lock screen wallpaper | <IpcCommand command="lockscreen-wallpaper-clear" /> | Remove the override set over IPC or the plugin API. The lock screen then uses `[lockscreen].wallpaper` from `config.toml` if set, otherwise the desktop wallpaper. |
 
 ## Theme
 

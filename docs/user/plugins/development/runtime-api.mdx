@@ -45,7 +45,7 @@ effective configuration. For example, `noctalia.getSetting("shell.offline_mode")
 | `noctalia.setWallpaperMask(connector, nil)` | nothing | Clears this plugin runtime's mask from the output. Requires <PluginApiBadge feature="wallpaper-mask" />. |
 | `noctalia.lockscreenWallpaperPath(connector)` | string or `nil` | Returns the effective lock screen wallpaper for an output: the `[lockscreen].wallpaper` override if set, else that output's desktop wallpaper. `nil` for an unknown output. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
 | `noctalia.setLockscreenWallpaper(path)` | nothing | Sets and persists the `[lockscreen].wallpaper` override, applying to every monitor. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
-| `noctalia.clearLockscreenWallpaper()` | nothing | Clears the override so the lock screen goes back to inheriting the desktop wallpaper. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
+| `noctalia.clearLockscreenWallpaper()` | nothing | Removes the override. The lock screen then uses `[lockscreen].wallpaper` from `config.toml` if set, otherwise the desktop wallpaper. Requires <PluginApiBadge feature="lockscreen-wallpaper" />. |
 | `noctalia.togglePanel("author/plugin:panel")` | nothing | Opens or closes a plugin panel by full entry id. |
 | `noctalia.openSettings()` | nothing | Opens the settings window at this plugin's own settings, closing any open panel. Requires <PluginApiBadge feature="open-settings" />. |
 
