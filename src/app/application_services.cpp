@@ -704,9 +704,15 @@ void Application::initStyleThemeAndWayland() {
       kLog.warn("plugin setLockscreenWallpaper failed for \"{}\"", path);
       return;
     }
-    m_configService.setLockscreenWallpaperPath(*resolved);
+    if (!m_configService.setLockscreenWallpaperPath(*resolved)) {
+      kLog.warn("plugin setLockscreenWallpaper could not save \"{}\"", *resolved);
+    }
   });
-  m_scriptApi.setClearLockscreenWallpaperHook([this]() { m_configService.clearLockscreenWallpaperPath(); });
+  m_scriptApi.setClearLockscreenWallpaperHook([this]() {
+    if (!m_configService.clearLockscreenWallpaperPath()) {
+      kLog.warn("plugin clearLockscreenWallpaper could not save settings");
+    }
+  });
 
   // Let a plugin toggle one of its own panels.
   m_scriptApi.setTogglePanelHook([this](const std::string& panelId) { m_panelManager.togglePanel(panelId); });

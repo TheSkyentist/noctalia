@@ -80,6 +80,15 @@ namespace {
     });
   }
 
+  std::string saveFailedError(const ConfigService& config) {
+    std::string out = "error: could not save lock screen wallpaper";
+    if (!config.lastMutationError().empty()) {
+      out += ": " + config.lastMutationError();
+    }
+    out.push_back('\n');
+    return out;
+  }
+
   const ext_session_lock_v1_listener kSessionLockListener = {
       .locked = &LockScreen::handleLocked,
       .finished = &LockScreen::handleFinished,
@@ -189,14 +198,18 @@ void LockScreen::registerIpc(IpcService& ipc) {
     if (!resolved.has_value()) {
       return "error: path does not exist or is not a regular file\n";
     }
-    m_configService->setLockscreenWallpaperPath(*resolved);
+    if (!m_configService->setLockscreenWallpaperPath(*resolved)) {
+      return saveFailedError(*m_configService);
+    }
     return "ok\n";
   });
   ipc.bind(noctalia::cli::msg::lockscreenWallpaperClear, [this](const std::string&) -> std::string {
     if (m_configService == nullptr) {
       return "error: lock screen not initialized\n";
     }
-    m_configService->clearLockscreenWallpaperPath();
+    if (!m_configService->clearLockscreenWallpaperPath()) {
+      return saveFailedError(*m_configService);
+    }
     return "ok\n";
   });
 }

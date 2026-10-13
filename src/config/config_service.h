@@ -102,9 +102,10 @@ public:
 
   // Effective lock screen wallpaper: lockscreen.wallpaper if set, else the desktop wallpaper.
   [[nodiscard]] std::string getLockscreenWallpaperPath(const std::string& connectorName) const;
-  void setLockscreenWallpaperPath(const std::string& path);
-  // Reverts to inheriting the desktop wallpaper.
-  void clearLockscreenWallpaperPath();
+  [[nodiscard]] bool setLockscreenWallpaperPath(const std::string& path);
+  // Reverts to inheriting the desktop wallpaper. Returns true when the override is cleared, including
+  // when it already was; false when the settings could not be written.
+  [[nodiscard]] bool clearLockscreenWallpaperPath();
 
   [[nodiscard]] const std::vector<WallpaperFavorite>& wallpaperFavorites() const noexcept;
   [[nodiscard]] bool isWallpaperFavorite(std::string_view path) const;

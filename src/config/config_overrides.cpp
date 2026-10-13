@@ -2306,11 +2306,11 @@ std::string ConfigService::getLockscreenWallpaperPath(const std::string& connect
   return getWallpaperPath(connectorName);
 }
 
-void ConfigService::setLockscreenWallpaperPath(const std::string& path) {
-  setOverride({"lockscreen", "wallpaper"}, path);
+bool ConfigService::setLockscreenWallpaperPath(const std::string& path) {
+  return setOverride({"lockscreen", "wallpaper"}, path);
 }
 
-void ConfigService::clearLockscreenWallpaperPath() { clearOverride({"lockscreen", "wallpaper"}); }
+bool ConfigService::clearLockscreenWallpaperPath() { return clearOverrides({{"lockscreen", "wallpaper"}}, nullptr); }
 
 void ConfigService::setWallpaperPath(const std::optional<std::string>& connectorName, const std::string& path) {
   if (m_overridesPath.empty()) {
